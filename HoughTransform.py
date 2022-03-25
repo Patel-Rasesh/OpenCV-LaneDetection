@@ -21,10 +21,16 @@ class HoughTransform:
 
         # 3. This mask looks for tarmac gray
         # Temporarily initiating with hardcoded values for each lane image
+        # The following is in RGB order
         lower_gray = np.array([116,114,124])
         upper_gray = np.array([176,170,173])
         RGBLaneBlurred = cv2.GaussianBlur(RGBLaneOriginal, (15,15), 0)
         maskTarmac = cv2.inRange(RGBLaneBlurred, lower_gray, upper_gray)
+
+        # This mask looks for yellow stripes
+        lower_yellow = np.array([180,160,50])
+        upper_yellow = np.array([220,200,120])
+        maskYellowStripes = cv2.inRange(RGBLaneOriginal, lower_yellow, upper_yellow)
 
         # 4. Performing Dilation
         kernelTarmac = np.ones((3,3),np.uint8)
@@ -32,7 +38,7 @@ class HoughTransform:
         # image processing technique called the erosion is used for noise reduction
         erodedTarmac = cv2.erode(maskTarmac,kernelTarmac,iterations = 1)
         # image processing technique called the dilation is used to regain some lost area
-        dilatedTarmac = cv2.dilate(maskTarmac,kernel_lg,iterations = 1)
+        dilatedTarmac = cv2.dilate(maskTarmac+maskYellowStripes,kernel_lg,iterations = 1)
         # Bitwise-AND to get black everywhere else except the region of interest
         #result = cv2.bitwise_and(frame,frame, mask= mask)
         #dilatedTarmac = cv2.dilate(maskTarmac, kernelTarmac, iterations=1)
@@ -42,10 +48,6 @@ class HoughTransform:
         lower_white = np.array([230,230,230])
         upper_white = np.array([255,255,255])
         maskWhiteStripes = cv2.inRange(RGBLaneBlurred, lower_white, upper_white)
-        # This mask looks for yellow stripes
-        lower_yellow = np.array([0,230,230])
-        upper_yellow = np.array([0,255,255])
-        maskYellowStripes = cv2.inRange(RGBLaneBlurred, lower_yellow, upper_yellow)
         # 5. Apply thresholding on maskTarmac
         maskYW = cv2.bitwise_or(maskWhiteStripes, maskYellowStripes, dilatedTarmac)
         '''
@@ -99,6 +101,7 @@ class HoughTransform:
         if x2-x1 == 0:
             return False
         slope = (y2-y1)/(x2-x1)
+        #TODO - Even the slope=1 shouldn't be detected
         if slope == 0:
             return False
         else:
@@ -138,9 +141,9 @@ class HoughTransform:
         plt.subplot(1,2,1)
         plt.imshow(RGBLaneOriginal)
         plt.subplot(1,2,2)
-        plt.imshow(edges)
-        #plt.show()
+        plt.imshow(RGBLaneSlave)
         end = time.time()
+        plt.show()
         print("Runtime = ", end-start)
         cv2.waitKey(0)
         cv2.destroyAllWindows()
