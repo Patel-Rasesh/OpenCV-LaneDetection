@@ -6,7 +6,6 @@ import time
 from ToMergeLines import *
 #from KMeans import *
 
-
 class HoughTransform:
     def craftingMask(self, path):
         '''
@@ -22,8 +21,8 @@ class HoughTransform:
 
         # 3. This mask looks for tarmac gray
         # Temporarily initiating with hardcoded values for each lane image
-        lower_gray = np.array([60,75,75])
-        upper_gray = np.array([130,126,135])
+        lower_gray = np.array([116,114,124])
+        upper_gray = np.array([176,170,173])
         RGBLaneBlurred = cv2.GaussianBlur(RGBLaneOriginal, (15,15), 0)
         maskTarmac = cv2.inRange(RGBLaneBlurred, lower_gray, upper_gray)
 
@@ -94,7 +93,7 @@ class HoughTransform:
         mergedLines = process_lines(lines, edgesSlave)
         print("Number of lines after processing in the image : ", len(mergedLines))
         
-        return mergedLines
+        return mergedLines, edgesSlave
 
     def computeSlope(self, x1, x2, y1, y2):
         if x2-x1 == 0:
@@ -127,24 +126,25 @@ class HoughTransform:
                 cv2.polylines(image, [pts], True, (255,0,0), thickness)
 
     def driver(self, path):
+        start = time.time()
         RGBLaneOriginal, threshTaramc = self.craftingMask(path)
         print(RGBLaneOriginal.shape)
         RGBLaneSlave = RGBLaneOriginal.copy()
         # After applying cutome ROI (Detect gray), halving the image
         RGBLaneSlave = self.splittingImage(RGBLaneSlave)
         RGBLaneSlave = self.customeROI(RGBLaneSlave, threshTaramc)
-        self.drawLines(self.houghTransformHandler(RGBLaneSlave), RGBLaneOriginal)
+        mergedLines, edges = self.houghTransformHandler(RGBLaneSlave)
+        self.drawLines(mergedLines, RGBLaneOriginal)
         plt.subplot(1,2,1)
         plt.imshow(RGBLaneOriginal)
         plt.subplot(1,2,2)
-        plt.imshow(RGBLaneSlave)
-        plt.show()
+        plt.imshow(edges)
+        #plt.show()
+        end = time.time()
+        print("Runtime = ", end-start)
         cv2.waitKey(0)
         cv2.destroyAllWindows()
 
 obj = HoughTransform()
 path = "c:/Users/Friday/Desktop/Spring22/CS6384/Projects/Project1/lane/lane1.jpeg"
-start = time.time()
 obj.driver(path)
-end = time.time()
-print("Runtime = ", end-start)
