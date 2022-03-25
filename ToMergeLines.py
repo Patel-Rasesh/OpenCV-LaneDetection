@@ -25,7 +25,7 @@ def checker(line_new, groups, min_distance_to_merge, min_angle_to_merge):
     # if it is totally different line
     return True
 
-def DistancePointLine(point, line):
+#def DistancePointLine(point, line):
     """Get distance between point and line
     """
     px, py = point
@@ -60,8 +60,29 @@ def DistancePointLine(point, line):
         DistancePointLine = lineMagnitude(px, py, ix, iy)
 
     return DistancePointLine
+def distance_to_line(point, line):
+    """Get distance between point and line
+    https://stackoverflow.com/questions/40970478/python-3-5-2-distance-from-a-point-to-a-line
+    """
+    px, py = point
+    x1, y1, x2, y2 = line
+    x_diff = x2 - x1
+    y_diff = y2 - y1
+    num = abs(y_diff * px - x_diff * py + x2 * y1 - y2 * x1)
+    den = math.sqrt(y_diff**2 + x_diff**2)
+    return num / den
 
 def get_distance(a_line, b_line):
+    """Get all possible distances between each dot of two lines and second line
+    return the shortest
+    """
+    dist1 = distance_to_line(a_line[:2], b_line)
+    dist2 = distance_to_line(a_line[2:], b_line)
+    dist3 = distance_to_line(b_line[:2], a_line)
+    dist4 = distance_to_line(b_line[2:], a_line)
+
+    return min(dist1, dist2, dist3, dist4)
+#def get_distance(a_line, b_line):
     """Get all possible distances between each dot of two lines and second line
     return the shortest
     """
@@ -76,8 +97,8 @@ def merge_lines_pipeline_2(lines):
     'Clusterize (group) lines'
     groups = []  # all lines groups are here
     # Parameters to play with
-    min_distance_to_merge = 50
-    min_angle_to_merge = 50
+    min_distance_to_merge = 20
+    min_angle_to_merge = 20
     # first line will create new group every time
     groups.append([lines[0]])
     # if line is different from existing gropus, create a new group
