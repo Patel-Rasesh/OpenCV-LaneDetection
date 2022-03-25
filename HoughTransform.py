@@ -50,7 +50,7 @@ class HoughTransform:
         # 5. Apply thresholding on maskTarmac
         maskYW = cv2.bitwise_or(maskWhiteStripes, maskYellowStripes, dilatedTarmac)
         '''
-        ret, threshTaramc = cv2.threshold(maskTarmac,100,255,cv2.THRESH_BINARY)
+        ret, threshTaramc = cv2.threshold(dilatedTarmac,100,255,cv2.THRESH_BINARY)
         return RGBLaneOriginal, threshTaramc
     # 6. Keep only portion from the original image that appear in mask
     #tarmacApplied = cv2.subtract(grayLaneTest, dilatedTarmac)
