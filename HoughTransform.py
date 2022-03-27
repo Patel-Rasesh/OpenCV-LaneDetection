@@ -1,7 +1,6 @@
 import cv2
 import matplotlib.pyplot as plt
 import numpy as np
-import sys, os
 import time
 from ToMergeLines import *
 #from KMeans import *
@@ -19,18 +18,25 @@ class HoughTransform:
         RGBLaneOriginal = cv2.cvtColor(laneOriginal, cv2.COLOR_BGR2RGB)
         hsvLaneOriginal = cv2.cvtColor(laneOriginal, cv2.COLOR_BGR2HSV)
 
+        RGBLaneSlave = RGBLaneOriginal.copy()
+        slaveResized = self.resize(RGBLaneSlave)
+        print(slaveResized.shape)
+        RGBSlaveEllipse = slaveResized.copy()
+        self.drawEllipse(RGBSlaveEllipse)
+        ellipseSlave = self.ellipseROI(slaveResized, RGBSlaveEllipse)
+
         # 3. This mask looks for tarmac gray
         # Temporarily initiating with hardcoded values for each lane image
         # The following is in RGB order
         lower_gray = np.array([116,114,124])
         upper_gray = np.array([176,170,173])
-        RGBLaneBlurred = cv2.GaussianBlur(RGBLaneOriginal, (15,15), 0)
+        RGBLaneBlurred = cv2.GaussianBlur(ellipseSlave, (15,15), 0)
         maskTarmac = cv2.inRange(RGBLaneBlurred, lower_gray, upper_gray)
 
         # This mask looks for yellow stripes
         lower_yellow = np.array([180,160,50])
         upper_yellow = np.array([220,200,120])
-        maskYellowStripes = cv2.inRange(RGBLaneOriginal, lower_yellow, upper_yellow)
+        maskYellowStripes = cv2.inRange(ellipseSlave, lower_yellow, upper_yellow)
 
         # 4. Performing Dilation
         kernelTarmac = np.ones((3,3),np.uint8)
@@ -52,7 +58,8 @@ class HoughTransform:
         maskYW = cv2.bitwise_or(maskWhiteStripes, maskYellowStripes, dilatedTarmac)
         '''
         ret, threshTaramc = cv2.threshold(dilatedTarmac,100,255,cv2.THRESH_BINARY)
-        return RGBLaneOriginal, threshTaramc
+
+        return slaveResized, ellipseSlave, threshTaramc
     # 6. Keep only portion from the original image that appear in mask
     #tarmacApplied = cv2.subtract(grayLaneTest, dilatedTarmac)
 
@@ -73,6 +80,16 @@ class HoughTransform:
                     if threshTaramc[row][col] == 0:
                         RGBLaneSlave[row][col][color] = 0
         return RGBLaneSlave
+    
+    def ellipseROI(self, img, mask):
+
+    # Returns respective Region Of Interest
+        for row in range(img.shape[0]):
+            for col in range(img.shape[1]):
+                for color in range(img.shape[2]):
+                    if mask[row][col][color] != 0:
+                        img[row][col][color] = 0
+        return img
 
     def houghTransformHandler(self, RGBLaneSlave):
         '''
@@ -127,21 +144,44 @@ class HoughTransform:
             pts = np.array([[x1, y1], [x2 , y2]], np.int32)
             if self.computeSlope(x1, x2, y1, y2):
                 cv2.polylines(image, [pts], True, (255,0,0), thickness)
+    def resize(self, img):
+        '''
+        Takes the original image and resize it by the factor of 60%
+        '''
+        print("Dimensions of the original image = ", img.shape)
+        scale_percent_width = 1080/img.shape[1]
+        scale_percent_height = 720/img.shape[0]
+        width = int(img.shape[1] * scale_percent_width)
+        height = int(img.shape[0] * scale_percent_height)
+        dim = (width, height)
+        
+        # resize image
+        resizedImg = cv2.resize(img, dim, interpolation = cv2.INTER_AREA)
+        print('Resized Dimensions : ',resizedImg.shape)
+        return resizedImg 
 
+    def drawEllipse(self, image):
+        center_coordinates = (540, 720)
+        axesLength = (700, 400)
+        angle = 0
+        startAngle = 0
+        endAngle = 360
+        color = (0, 0, 0)
+        thickness = -1
+        image = cv2.ellipse(image, center_coordinates, axesLength, angle, startAngle, endAngle, color, thickness)
+        return image
     def driver(self, path):
         start = time.time()
-        RGBLaneOriginal, threshTaramc = self.craftingMask(path)
-        print(RGBLaneOriginal.shape)
-        RGBLaneSlave = RGBLaneOriginal.copy()
+        RGBLaneOriginal, ROIApplied, threshTaramc = self.craftingMask(path)
         # After applying cutome ROI (Detect gray), halving the image
-        RGBLaneSlave = self.splittingImage(RGBLaneSlave)
-        RGBLaneSlave = self.customeROI(RGBLaneSlave, threshTaramc)
+        RGBLaneSlave = ROIApplied.copy()
+        # RGBLaneSlave = self.customeROI(RGBLaneSlave, threshTaramc)
         mergedLines, edges = self.houghTransformHandler(RGBLaneSlave)
         self.drawLines(mergedLines, RGBLaneOriginal)
         plt.subplot(1,2,1)
         plt.imshow(RGBLaneOriginal)
         plt.subplot(1,2,2)
-        plt.imshow(RGBLaneSlave)
+        plt.imshow(edges)
         end = time.time()
         plt.show()
         print("Runtime = ", end-start)
@@ -149,5 +189,5 @@ class HoughTransform:
         cv2.destroyAllWindows()
 
 obj = HoughTransform()
-path = "c:/Users/Friday/Desktop/Spring22/CS6384/Projects/Project1/lane/lane1.jpeg"
+path = "c:/Users/Friday/Desktop/Spring22/CS6384/Projects/Project1/lane/lane4.jpeg"
 obj.driver(path)
