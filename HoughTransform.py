@@ -2,8 +2,8 @@ import cv2
 import matplotlib.pyplot as plt
 import numpy as np
 import time
-from ToMergeLines import *
-#from KMeans import *
+#from ToMergeLines import *
+from MergeLines import *
 
 class HoughTransform:
     def craftingMask(self, path):
@@ -16,7 +16,6 @@ class HoughTransform:
         
         # 2. Convert BGR to RGB for easier interpretation
         RGBimg = cv2.cvtColor(originalImage, cv2.COLOR_BGR2RGB)
-        #hsvLaneOriginal = cv2.cvtColor(originalImage, cv2.COLOR_BGR2HSV)
 
         # 3. Resizing the image to a fixed resolution
         RGBimgCopy = RGBimg.copy()
@@ -30,43 +29,50 @@ class HoughTransform:
         self.drawEllipse(ellipseCopy1)
         self.ellipseROI(resizedImage, ellipseCopy1)
 
-        # 5. This mask looks for tarmac gray
-        # Temporarily initiating with hardcoded values for each lane image
+        # 5. This mask looks for white lanes
         # The following is in RGB order
-        lower_gray = np.array([116,114,124])
-        upper_gray = np.array([176,170,173])
+        lower_white = np.array([116,114,124])
+        upper_white = np.array([176,170,173])
         RGBBlurred = cv2.GaussianBlur(resizedImage, (15,15), 0)
-        maskTarmac = cv2.inRange(RGBBlurred, lower_gray, upper_gray)
+        maskWhiteLanes = cv2.inRange(RGBBlurred, lower_white, upper_white)
 
-        # This mask looks for yellow stripes
+        # This mask looks for yellow lanes
         lower_yellow = np.array([180,160,50])
         upper_yellow = np.array([220,200,120])
-        maskYellowStripes = cv2.inRange(RGBBlurred, lower_yellow, upper_yellow)
-        #maskYellowStripes = cv2.inRange(resizedImage, lower_yellow, upper_yellow)
+        maskYellowLanes = cv2.inRange(RGBBlurred, lower_yellow, upper_yellow)
+
+        # TODO - This mask looks for red lanes - fire lanes
+        lower_red = np.array([180,160,50])
+        upper_red = np.array([220,200,120])
+        maskRedLanes = cv2.inRange(RGBBlurred, lower_red, upper_red)
 
         # 6. Performing Dilation
         #kernelTarmac = np.ones((3,3),np.uint8)
+        #erodedTarmac = cv2.erode(maskWhiteLanes,kernelTarmac,iterations = 1)
         kernel_dilation = np.ones((3,3),np.uint8)
-        #erodedTarmac = cv2.erode(maskTarmac,kernelTarmac,iterations = 1)
-        dilatedROI = cv2.dilate(maskTarmac+maskYellowStripes,kernel_dilation,iterations = 1)
+        dilatedROI = cv2.dilate(maskWhiteLanes+maskYellowLanes,kernel_dilation,iterations = 1)
 
         # 7. Applying threshold
         ret, threshTaramc = cv2.threshold(dilatedROI,100,255,cv2.THRESH_BINARY)
 
         return resizedImageCopy, resizedImage, threshTaramc
 
-    # WE ARE NO LONGER USING THIS FUNCTION
+    # I AM NO LONGER USING THIS FUNCTION
     def splittingImage(self, img):
-        # Splitting the image in half (horizontally) and only considering the bottom part
+        '''
+        Splitting the image in half (horizontally) and only considering the bottom part
+        '''
         for x in range(img.shape[0]*1//2):
             for y in range(img.shape[1]):
                 for z in range(img.shape[2]):
                     img[x][y][z] = 0
         return img
 
-    # WE ARE NO LONGER USING THIS FUNCTION
+    # I AM NO LONGER USING THIS FUNCTION
     def customeROI(self, img, mask):
-        # Returns respective Region Of Interest
+        '''
+        Returns respective Region Of Interest
+        '''
         for row in range(img.shape[0]):
             for col in range(img.shape[1]):
                 for color in range(img.shape[2]):
@@ -75,7 +81,9 @@ class HoughTransform:
         return img
     
     def ellipseROI(self, img, mask):
-        # Returns respective Region Of Interest in elliptical shape
+        '''
+        Returns respective Region Of Interest in elliptical shape
+        '''
         for row in range(img.shape[0]):
             for col in range(img.shape[1]):
                 for color in range(img.shape[2]):
@@ -104,7 +112,8 @@ class HoughTransform:
         maxLineGap = 10
         unprocessedLines = cv2.HoughLinesP(edgesCanny,cv2.HOUGH_PROBABILISTIC, np.pi/180, 50, minLineLength,maxLineGap)
         print("Number of lines originally found : ", len(unprocessedLines))
-        processedLines = process_lines(unprocessedLines, edgesCanny)
+        #processedLines = process_lines(unprocessedLines, edgesCanny)
+        processedLines = driverMergeLines(unprocessedLines, edgesCanny)
         print("Number of lines after processing : ", len(processedLines))
         
         return processedLines, edgesCanny
@@ -182,6 +191,9 @@ class HoughTransform:
         img = cv2.ellipse(img, center_coordinates, axesLength, angle, startAngle, endAngle, color, thickness)
         return img
 
+    def stopSignContour(self, img):
+        pass
+        
     def driver(self, path):
         '''
         Main driving function
@@ -191,19 +203,22 @@ class HoughTransform:
         RGBOriginal, ROIImage, threshTaramc = self.craftingMask(path)
 
         ROIImageCopy = ROIImage.copy()
-        # ROIImageCopy = self.customeROI(ROIImageCopy, threshTaramc)
+        #ROIImageCopy = self.customeROI(ROIImageCopy, threshTaramc)
 
         # 2. Applying Hough Transform
         processedLines, edgesCanny = self.houghTransformHandler(ROIImageCopy)
 
-        # 3. Drawing detected lines on top of the original input image
+        # 3a. Detecting STOP signs
+        self.stopSignContour(RGBOriginal)
+
+        # 3b. Drawing detected lines on top of the original input image
         self.drawLines(processedLines, RGBOriginal)
 
         # 4. Plotting original image with edgesCanny from Canny 
         plt.subplot(1,2,1)
         plt.imshow(RGBOriginal)
         plt.subplot(1,2,2)
-        plt.imshow(edgesCanny)
+        plt.imshow(ROIImageCopy)
         end = time.time()
         plt.show()
         print("Runtime = ", end-start)
