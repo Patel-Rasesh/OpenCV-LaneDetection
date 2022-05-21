@@ -34,7 +34,7 @@ Time spent: **11** hours spent in total
 ![image](https://user-images.githubusercontent.com/91232193/169663381-b9ff9581-f189-4cc0-bd0f-9e706b0f4063.png)  
 
 ## Challenges faced 
-(Unresolved challenges are unmarked)
+(Resolved challenges are marked)
 
 - [X] Numerous trials and errors of morphological and geometric transformation operations before reaching to a satisfactory ROI- Region of Interest, for lane detection
 - [X] Calibrating mutually accepted values of parameters i.e. Line Length, Line Gap, that can work for every test image
