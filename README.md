@@ -1,7 +1,3 @@
-# OpenCV-LaneDetection
-This covers lane line detection on images (taken from car dashcam and walkover bridge). Hough transform has been used alongside other image processing operations
-
-
 # Spot the race-track
 Here, the expectation is to be able to detect lane lines from an image- captured from the dash-cam of a car or the camera attached to a foot-over bridge. The configuration for this lane detection is as follows  
 
