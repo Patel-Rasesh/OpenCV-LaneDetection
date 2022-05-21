@@ -1,14 +1,14 @@
 # Spot the race-track
 Here, the expectation is to be able to detect lane lines from an image- captured from the dash-cam of a car or the camera attached to a foot-over bridge. The configuration for this lane detection is as follows  
 
-• The lane can be straight or a curve
-• White broken lane lines should be detected as one merged line along its trajectory
-• Two solid parallel lane lines should be counted as two distinct lines
-• Fire lanes should be detected
-• Yellow lanes should be detected
-• An image with no lane lines should not detect any lines
-• Detection should not take more than a minute
-• Bonus points if able to detect STOP signs
+• The lane can be straight or a curve  
+• White broken lane lines should be detected as one merged line along its trajectory  
+• Two solid parallel lane lines should be counted as two distinct lines  
+• Fire lanes should be detected  
+• Yellow lanes should be detected  
+• An image with no lane lines should not detect any lines  
+• Detection should not take more than a minute  
+• Bonus points if able to detect STOP signs  
 
 Time spent: **11** hours spent in total
 
